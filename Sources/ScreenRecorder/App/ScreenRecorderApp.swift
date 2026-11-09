@@ -27,4 +27,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
     }
+
+    /// Closing the window or choosing Quit while a recording is running would otherwise
+    /// leave an unfinalised movie on disk, which no player can open. Flush it first.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let engine = RecordingEngine.current, engine.isBusy else { return .terminateNow }
+        Task { @MainActor in
+            await engine.stop()
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
 }

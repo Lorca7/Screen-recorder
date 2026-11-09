@@ -23,6 +23,10 @@ final class RecordingEngine: ObservableObject {
     @Published private(set) var lastRecordingURL: URL?
     @Published var errorMessage: String?
 
+    /// The engine the UI is driving, so the app delegate can finalise an in-flight
+    /// recording before the process exits.
+    private(set) static weak var current: RecordingEngine?
+
     private var session: CaptureSession?
     private var writer: MovieWriter?
     private var ticker: Timer?
@@ -30,6 +34,10 @@ final class RecordingEngine: ObservableObject {
     private var accumulated: TimeInterval = 0
 
     var isBusy: Bool { state != .idle }
+
+    init() {
+        RecordingEngine.current = self
+    }
 
     // MARK: - Start
 

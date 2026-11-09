@@ -147,8 +147,7 @@ struct ContentView: View {
         case .aac256, .aac320:
             audioText = "48 kHz stereo, \((settings.audio.bitrate ?? 0) / 1000) kbps AAC"
         }
-        let scope = target.capturesOnlySelectedAppAudio ? "audio from the selected apps only" : "all system audio"
-        return "\(size.width)×\(size.height) @ \(settings.framesPerSecond) fps · video ≈ \(Format.bitrate(bitrate)) · \(audioText) · \(scope)"
+        return "\(size.width)×\(size.height) @ \(settings.framesPerSecond) fps · video ≈ \(Format.bitrate(bitrate)) · \(audioText) · \(target.audioScopeDescription)"
     }
 
     private func applyDefaultSelection() {

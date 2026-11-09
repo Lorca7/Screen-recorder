@@ -22,7 +22,7 @@ where the apps produce it, which means:
   volume at zero, or with headphones unplugged).
 * It is independent of the selected output device.
 * Your microphone is never opened — the app does not request microphone permission at all.
-* Choosing **Specific apps** records only *that app's* audio. A Safari tab, a game, a video
+* Choosing **Specific apps** (or a single window) records only *that app's* audio. A Safari tab, a game, a video
   call's incoming audio — with every other sound on the Mac left out of the file.
 
 Audio is captured as 48 kHz stereo and written as either transparent AAC (256/320 kbps) or
@@ -38,7 +38,7 @@ untouched 32-bit float PCM.
 | **Audio** | System/app audio via ScreenCaptureKit — 48 kHz stereo, AAC 256/320 kbps or lossless 32-bit float PCM |
 | **Video codecs** | H.264 (maximum compatibility), HEVC/H.265 (best quality per MB), Apple ProRes 422 (editing master) |
 | **Containers** | `.mp4` and `.mov` |
-| **Resolution** | Full native Retina pixels — a 1440p display records at 2880×1800, not half size |
+| **Resolution** | Full native Retina pixels — a Retina display is recorded at its backing resolution, not at half size |
 | **Frame rates** | 24 / 30 / 48 / 60 / 120 fps |
 | **Bitrate** | Derived from pixels × fps with a Balanced / High / Maximum target |
 | **Live feedback** | Elapsed time, growing file size, frame count, and a level meter proving audio is arriving |

@@ -116,7 +116,7 @@ final class MediaExporter: ObservableObject {
         session.outputFileType = target.fileType
         session.shouldOptimizeForNetworkUse = (target.fileType == .mp4)
         currentSession = session
-        startProgressTimer(for: session)
+        startProgressTimer()
 
         await session.export()
 
@@ -147,12 +147,15 @@ final class MediaExporter: ObservableObject {
             .appendingPathExtension(target.fileExtension)
     }
 
-    private func startProgressTimer(for session: AVAssetExportSession) {
+    private func startProgressTimer() {
         stopProgressTimer()
-        let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self, weak session] _ in
-            guard let session else { return }
-            let value = Double(session.progress)
-            Task { @MainActor in self?.progress = value }
+        // The session itself is read back on the main actor, so nothing non-Sendable
+        // crosses into the timer's closure.
+        let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, let session = self.currentSession else { return }
+                self.progress = Double(session.progress)
+            }
         }
         RunLoop.main.add(timer, forMode: .common)
         progressTimer = timer

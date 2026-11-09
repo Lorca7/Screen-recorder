@@ -26,10 +26,20 @@ enum CaptureTarget {
         }
     }
 
-    /// Whether the audio in the recording is limited to the chosen apps.
-    var capturesOnlySelectedAppAudio: Bool {
-        if case .applications = self { return true }
-        return false
+    /// ScreenCaptureKit's audio tap follows the content filter, so what lands in the file
+    /// depends on what was selected.
+    var audioScopeDescription: String {
+        switch self {
+        case .display:
+            return "all system audio"
+        case .window(let window):
+            let app = window.owningApplication?.applicationName ?? "that app"
+            return "audio from \(app) only"
+        case .applications(let apps, _):
+            return apps.count == 1
+                ? "audio from \(apps[0].applicationName) only"
+                : "audio from the \(apps.count) selected apps only"
+        }
     }
 
     func contentFilter() -> SCContentFilter {

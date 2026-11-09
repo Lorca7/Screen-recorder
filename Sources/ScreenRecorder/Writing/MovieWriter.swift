@@ -8,7 +8,10 @@ import Foundation
 ///
 /// Every public method is safe to call from any thread; work is funnelled onto one serial
 /// queue so sample order is preserved.
-final class MovieWriter {
+///
+/// `@unchecked Sendable` is accurate rather than a shortcut: every mutable property is
+/// touched only inside `queue`, and the two UI-facing counters sit behind `statsLock`.
+final class MovieWriter: @unchecked Sendable {
     enum WriterError: LocalizedError {
         case setupFailed(String)
         case writingFailed(String)

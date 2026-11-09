@@ -4,6 +4,7 @@ import SwiftUI
 
 // MARK: - Card container
 
+@MainActor
 struct Card<Content: View>: View {
     let title: String
     var subtitle: String?
@@ -69,12 +70,14 @@ struct PermissionBanner: View {
     }
 }
 
+@MainActor
 struct MessageBanner: View {
     enum Kind { case error, info }
 
+
     let text: String
     let kind: Kind
-    let onDismiss: () -> Void
+    let onDismiss: @MainActor () -> Void
 
     private var tint: Color { kind == .error ? .red : .accentColor }
 
@@ -116,9 +119,7 @@ struct SourceSelection: View {
     var body: some View {
         Card(
             title: "What to record",
-            subtitle: sourceKind == .applications
-                ? "Only the chosen apps are drawn, and only their audio is recorded — everything else stays out of the file."
-                : "The full picture plus every sound the system is playing."
+            subtitle: Self.subtitle(for: sourceKind)
         ) {
             Picker("", selection: $sourceKind) {
                 ForEach(SourceKind.allCases) { kind in
@@ -219,6 +220,17 @@ struct SourceSelection: View {
                 else { selectedAppIDs.remove(app.bundleIdentifier) }
             }
         )
+    }
+
+    private static func subtitle(for kind: SourceKind) -> String {
+        switch kind {
+        case .display:
+            return "The whole screen plus every sound the system is playing."
+        case .window:
+            return "One window, and the audio of the app that owns it."
+        case .applications:
+            return "Only the chosen apps are drawn, and only their audio is recorded \u{2014} every other sound on the Mac stays out of the file."
+        }
     }
 
     private static func label(for display: SCDisplay) -> String {
@@ -359,8 +371,8 @@ struct OutputFolderView: View {
 struct TransportView: View {
     @ObservedObject var engine: RecordingEngine
     let canRecord: Bool
-    let onStart: () -> Void
-    let onStop: () -> Void
+    let onStart: @MainActor () -> Void
+    let onStop: @MainActor () -> Void
 
     var body: some View {
         Card(title: "Recording") {
@@ -424,6 +436,7 @@ struct TransportView: View {
     }
 }
 
+@MainActor
 struct AudioLevelBar: View {
     let level: Float
     let isActive: Bool

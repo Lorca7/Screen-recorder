@@ -22,8 +22,10 @@ where the apps produce it, which means:
   volume at zero, or with headphones unplugged).
 * It is independent of the selected output device.
 * Your microphone is never opened — the app does not request microphone permission at all.
-* Choosing **Specific apps** (or a single window) records only *that app's* audio. A Safari tab, a game, a video
-  call's incoming audio — with every other sound on the Mac left out of the file.
+* The audio tap follows whatever you chose to record. **Entire display** gives you the whole
+  system mix; **Specific apps** or **Single window** gives you only that app's audio — a
+  browser tab, a game, the incoming side of a call — with every other sound on the Mac,
+  notifications included, left out of the file.
 
 Audio is captured as 48 kHz stereo and written as either transparent AAC (256/320 kbps) or
 untouched 32-bit float PCM.
@@ -34,7 +36,7 @@ untouched 32-bit float PCM.
 
 | | |
 |---|---|
-| **Sources** | A whole display, a single window, or a set of applications |
+| **Sources** | A whole display (all system audio), a single window or a set of applications (just their audio) |
 | **Audio** | System/app audio via ScreenCaptureKit — 48 kHz stereo, AAC 256/320 kbps or lossless 32-bit float PCM |
 | **Video codecs** | H.264 (maximum compatibility), HEVC/H.265 (best quality per MB), Apple ProRes 422 (editing master) |
 | **Containers** | `.mp4` and `.mov` |

@@ -488,7 +488,7 @@ struct ResultView: View {
                 }
                 .disabled(exporter.isExporting)
                 Button("Export") {
-                    Task { await exporter.export(source: url, to: exportTarget) }
+                    Task { _ = await exporter.export(source: url, to: exportTarget) }
                 }
                 .disabled(exporter.isExporting)
             }

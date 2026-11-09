@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import Combine
 import ScreenCaptureKit
 import SwiftUI
 

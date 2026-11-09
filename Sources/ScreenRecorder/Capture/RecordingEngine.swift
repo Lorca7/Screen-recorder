@@ -28,7 +28,6 @@ final class RecordingEngine: ObservableObject {
     private var ticker: Timer?
     private var startDate: Date?
     private var accumulated: TimeInterval = 0
-    private var currentSettings = RecordingSettings()
 
     var isBusy: Bool { state != .idle }
 
@@ -43,7 +42,6 @@ final class RecordingEngine: ObservableObject {
         fileSize = 0
         elapsed = 0
         accumulated = 0
-        currentSettings = settings
 
         let (width, height) = target.pixelSize()
         let url = RecordingEngine.makeOutputURL(settings: settings)

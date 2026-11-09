@@ -6,11 +6,19 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Publish a release under this tag (e.g. v1.0.0). Leave empty to only build."
+        required: false
+        default: ""
 
 jobs:
   build:
     name: Build app bundle (macOS)
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    if: >-
+      ${{ !startsWith(github.ref, 'refs/tags/')
+          && github.event.inputs.release_tag == ''
+          && !contains(github.event.head_commit.message, '[release]') }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
@@ -31,7 +39,10 @@ jobs:
 
   release:
     name: Publish release
-    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    if: >-
+      ${{ startsWith(github.ref, 'refs/tags/')
+          || github.event.inputs.release_tag != ''
+          || contains(github.event.head_commit.message, '[release]') }}
     runs-on: macos-latest
     permissions:
       contents: write
@@ -48,9 +59,20 @@ jobs:
 
       - name: Package for download
         id: package
+        env:
+          RELEASE_TAG_INPUT: ${{ github.event.inputs.release_tag }}
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${RELEASE_TAG_INPUT:-}"
+          if [[ -z "$TAG" ]]; then
+            if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+              TAG="$GITHUB_REF_NAME"
+            else
+              TAG="v$(tr -d '[:space:]' < VERSION)"
+            fi
+          fi
+          echo "Publishing as $TAG"
+          VERSION="${TAG#v}"
           ZIP="Screen-Recorder-${VERSION}-universal.zip"
           cd dist
           # ditto, not zip: it preserves the bundle structure and the code signature.
@@ -59,6 +81,7 @@ jobs:
           echo "zip=dist/$ZIP" >> "$GITHUB_OUTPUT"
           echo "sha=dist/$ZIP.sha256" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Write release notes
         run: |
@@ -101,8 +124,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
+          # --target creates the tag at this commit when it does not exist yet.
+          gh release create "${{ steps.package.outputs.tag }}" \
             "${{ steps.package.outputs.zip }}" \
             "${{ steps.package.outputs.sha }}" \
+            --target "$GITHUB_SHA" \
             --title "Screen Recorder ${{ steps.package.outputs.version }}" \
             --notes-file release-notes.md

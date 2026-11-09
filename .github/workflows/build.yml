@@ -3,12 +3,14 @@ name: Build
 on:
   push:
     branches: ["**"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
 jobs:
   build:
     name: Build app bundle (macOS)
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
@@ -18,14 +20,89 @@ jobs:
           swift --version
           xcodebuild -version
 
-      - name: Build release binary
-        run: swift build -c release --product ScreenRecorder
-
-      - name: Assemble .app bundle
-        run: ./Scripts/build-app.sh
+      - name: Build universal app bundle
+        run: ./Scripts/build-app.sh --universal
 
       - name: Upload app bundle
         uses: actions/upload-artifact@v5
         with:
           name: Screen-Recorder-app
           path: dist/
+
+  release:
+    name: Publish release
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Build universal app bundle
+        run: ./Scripts/build-app.sh --universal
+
+      - name: Package for download
+        id: package
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          ZIP="Screen-Recorder-${VERSION}-universal.zip"
+          cd dist
+          # ditto, not zip: it preserves the bundle structure and the code signature.
+          ditto -c -k --keepParent --sequesterRsrc "Screen Recorder.app" "$ZIP"
+          shasum -a 256 "$ZIP" | tee "$ZIP.sha256"
+          echo "zip=dist/$ZIP" >> "$GITHUB_OUTPUT"
+          echo "sha=dist/$ZIP.sha256" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Write release notes
+        run: |
+          cat > release-notes.md <<'NOTES'
+          A standalone macOS screen recorder that captures **the audio the apps on screen are
+          actually producing** — not the microphone, and not a loopback of your speakers.
+
+          Universal binary: runs on both Apple Silicon and Intel Macs. Requires macOS 14.6 or later.
+
+          ## Install
+
+          1. Download the `.zip` below and double-click to unpack it.
+          2. Move **Screen Recorder.app** to your Applications folder.
+          3. Clear the download quarantine flag (see below).
+          4. Launch the app, press **Request Permission**, and enable **Screen Recorder** under
+          System Settings → Privacy & Security → **Screen & System Audio Recording**.
+          5. Quit and reopen the app — macOS only grants that privilege to a freshly launched process.
+
+          ### Gatekeeper
+
+          This build is ad-hoc signed rather than notarised, so macOS blocks it on first launch and
+          may claim it "is damaged". Clear the quarantine flag once:
+
+          ```bash
+          xattr -dr com.apple.quarantine "/Applications/Screen Recorder.app"
+          ```
+
+          ## What it records
+
+          - Audio straight from ScreenCaptureKit's system audio tap: no microphone, no virtual audio
+          driver, unaffected by system volume or which output device is selected.
+          - Whole display → the full system mix. Single window or specific apps → only that app's
+          audio, with every other sound on the Mac left out of the file.
+          - 48 kHz stereo, AAC 256/320 kbps or lossless 32-bit float PCM.
+          - H.264, HEVC or ProRes 422 at native Retina resolution, 24–120 fps, in .mp4 or .mov.
+          - Export to MP4 (H.264/HEVC), a MOV re-wrap with no re-encode, or M4A audio only.
+          NOTES
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "${{ steps.package.outputs.zip }}" \
+            "${{ steps.package.outputs.sha }}" \
+            --title "Screen Recorder ${{ steps.package.outputs.version }}" \
+            --notes-file release-notes.md

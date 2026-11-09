@@ -58,6 +58,12 @@ Requires macOS 14.6 or later and the Xcode 15 command line tools (`xcode-select 
 ./Scripts/build-app.sh
 ```
 
+For a binary that runs on both Apple Silicon and Intel Macs:
+
+```bash
+./Scripts/build-app.sh --universal
+```
+
 ```bash
 open "dist/Screen Recorder.app"
 ```
@@ -67,6 +73,14 @@ ad-hoc code-signs it. To sign with your own Developer ID instead:
 
 ```bash
 ./Scripts/build-app.sh --sign "Developer ID Application: Your Name (TEAMID)"
+```
+
+### If you downloaded a release build
+
+Release zips are ad-hoc signed, not notarised, so macOS quarantines them. Clear the flag once:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Screen Recorder.app"
 ```
 
 ### Granting permission (required once)
